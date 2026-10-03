@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>__TITLE__</title>
+<script src="assets/gsap.min.js"></script>
+<style>
+@font-face { font-family: "Noto Sans CJK SC"; src: url("assets/fonts/NotoSansCJK-Regular.ttc"); font-weight: 400; }
+@font-face { font-family: "Noto Sans CJK SC"; src: url("assets/fonts/NotoSansCJK-Bold.ttc"); font-weight: 700; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0b0f14;
+  font-family: "Noto Sans CJK SC", system-ui, sans-serif; color: #f1f5f9; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.clip { position: absolute; inset: 0; }
+.bg-grid { position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(148,163,184,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148,163,184,.05) 1px, transparent 1px);
+  background-size: 80px 80px; }
+.bg-glow { position: absolute; inset: 0;
+  background: radial-gradient(ellipse 900px 500px at 50% 42%, rgba(56,130,246,.10), transparent 70%); }
+.chip { position: absolute; top: 56px; left: 72px; padding: 14px 30px; border-radius: 999px;
+  border: 2px solid rgba(255,209,102,.55); color: #ffd166; font-size: 30px; font-weight: 700;
+  letter-spacing: .12em; background: rgba(255,209,102,.06); }
+.scene-title { position: absolute; top: 150px; width: 100%; text-align: center;
+  font-size: 84px; font-weight: 700; letter-spacing: .04em; }
+.callout { position: absolute; padding: 12px 26px; border-radius: 14px; font-size: 36px; font-weight: 700; }
+#cap-layer { z-index: 50; }
+.cap { position: absolute; bottom: 44px; width: 100%; text-align: center; font-size: 42px;
+  font-weight: 700; letter-spacing: .04em; text-shadow: 0 2px 12px rgba(0,0,0,.9); opacity: 0; }
+.cap span { color: #f1f5f9; }
+.draw { stroke-dasharray: 100; stroke-dashoffset: 100; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-width="1920" data-height="1080" data-duration="__DURATION__">
+<audio id="narration" src="assets/narration.mp3" data-start="0" data-duration="__AUDIO_DUR__"></audio>
+
+<div class="clip" data-start="0" data-duration="__DURATION__" data-track-index="0">
+  <div class="bg-grid"></div><div class="bg-glow"></div>
+</div>
+
+<!-- __SCENE_1__: 起止 __S1_START__ - __S1_END__ -->
+<section class="clip" data-start="__S1_START__" data-duration="__S1_DUR__" data-track-index="1" id="sc1">
+<div id="s1-inner" style="position:absolute;inset:0">
+  <div class="chip">__CHIP_1__</div>
+  <div class="scene-title" id="s1-title">__TITLE_1__</div>
+  <!-- SVG / HTML 视觉元素放这里 -->
+</div>
+</section>
+
+<!-- 按段落复制上面的 section，每段一个场景 -->
+
+<div class="clip" id="cap-layer" data-start="0" data-duration="__DURATION__" data-track-index="10"></div>
+<div class="clip" data-start="0" data-duration="__DURATION__" data-track-index="20">
+  <div id="fadeout" style="position:absolute;inset:0;background:#0b0f14;opacity:0"></div>
+</div>
+</div>
+
+<script>
+/* __CAPS_JS__ : 由 bin/captions.py 生成的 caps.js 内容粘贴到这里，替换下一行 */
+var CAPS = [];
+var tl = gsap.timeline({ paused: true });
+
+function buildCaptions(){
+  var layer = document.getElementById("cap-layer");
+  CAPS.forEach(function(cap, ci){
+    var t0 = cap[0], t1 = cap[1], cwords = cap[2];
+    var el = document.createElement("div");
+    el.className = "cap"; el.id = "cap" + ci;
+    cwords.forEach(function(w){
+      var s = document.createElement("span");
+      s.textContent = w[0]; el.appendChild(s);
+      if (/^[，。：、]$/.test(w[0])) return;
+      tl.set(s, { color: "#ffd166" }, w[1]);
+      tl.set(s, { color: "#f1f5f9" }, w[2]);
+    });
+    layer.appendChild(el);
+    tl.set(el, { opacity: 1 }, t0);
+    tl.set(el, { opacity: 0 }, t1);
+  });
+}
+
+/* ---- 场景动画（时间均为相对音频 0 点的绝对秒数） ---- */
+// S1
+tl.fromTo("#s1-title", { opacity: 0, y: 46 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, __S1_START__ + 0.2);
+tl.to("#s1-inner", { opacity: 0, duration: 0.3 }, __S1_END__ - 0.3);
+
+// 在此追加 S2..Sn
+
+// 结尾淡出
+tl.to("#fadeout", { opacity: 1, duration: 0.5 }, __DURATION__ - 0.5);
+
+buildCaptions();
+window.__timelines["main"] = tl;
+tl.seek(0);
+</script>
+</body>
+</html>
