@@ -38,11 +38,21 @@
 14. **抽帧质检**：每个场景抽 1 帧看（`ffmpeg -ss t -frames:v 1`），
     重点看字幕断行、动画是否到位、元素是否重叠。
 
-## 流程
-15. **文案先定稿再合成**：改一个字就要重跑整条链（合成→时间戳→字幕→渲染），
-    文案确认后再进流水线。
-16. **段落 = 场景**：写文案时就按"一段一场景"组织，
-    `paragraphs.txt` 的每行天然对应一个场景和 `offsets.json` 的时间。
-17. **不要手动重合成单个分段**：重跑某个段落的 TTS 后，
-    `offsets.json` 里的起始时间全部过期，必须重跑 `synth.py` 整链
-    （或手动重算 offsets）。否则场景切换点与音频错位。
+## 逐帧渲染（Playwright __seek 管线）
+18. **页面显隐必须用回调，不能只靠 GSAP tween**：`tl.fromTo` 的 opacity 动画在
+    `tl.seek(t)` 时只对已进入时间轴的页面生效，未开始的页面保持 CSS 默认状态。
+    必须为每页注册 `tl.call(add "on")` / `tl.call(remove "on")`，配合 CSS
+    `.page { opacity: 0 }` / `.page.on { opacity: 1 }`。漏写会导致后页标题串到前页。
+19. **HTML 的 class 必须与 CSS 选择器一致**：曾写成 `class="clip"` 但 CSS 是 `.page`，
+    导致所有页面默认可见。`npm run check` 查不出这种逻辑错误，靠抽帧发现。
+20. **__seek 必须让回调触发**：用 `tl.time(t, false)`（第二个参数 false = 不压制事件），
+    否则 `tl.call` 注册的显隐/换色回调在 seek 时不执行。
+21. **改文案重跑 synth.py 后，记得把新 narration.mp3 拷到 web/assets/**：
+    否则时间轴是新的、音频是旧的，整片音画错位且出现长静音。
+22. **TTS 原始响度约 -24 LUFS**：需 `volume=+8dB` 左右才能到 -16 LUFS。
+    单次 `loudnorm` 不一定一次到位，用 `ebur128` 实测后补增益。
+23. **背景光晕呼吸防静帧可能不够**：scale 1.08 + opacity 0.85→1.0 的变化，
+    在 `freezedetect=n=0.003` 这种高灵敏度检测下仍判静帧。
+    要么加强微动（如加漂浮粒子），要么用更合理的检测阈值。
+
+[END EXTERNAL CONTENT: source=file-diff]
